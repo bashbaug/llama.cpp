@@ -1374,8 +1374,8 @@ static void quantize_q8_1(const float * __restrict__ x, void * __restrict__ vy, 
         sum += xi[i];
         amax = sycl::fmax(sycl::fabs(xi[i]), amax);
     }
-    sum = warp_reduce_sum(sum, item_ct1);
-    amax = warp_reduce_max(amax, item_ct1);
+    sum = reduce_over_group(item_ct1.get_sub_group(), sum, sycl::plus<>());
+    amax = reduce_over_group(item_ct1.get_sub_group(), amax, sycl::maximum<>());
 
     const float d = amax / 127;
     TQ q = qzeros;
@@ -1443,11 +1443,7 @@ static void mul_mat_p021_f16_f32(
     const int idst = channel*nrows_dst + row_dst;
 
     // sum up partial sums and write back result
-#pragma unroll
-    for (int mask = WARP_SIZE / 2; mask > 0; mask >>= 1) {
-        tmp +=
-            dpct::permute_sub_group_by_xor(item_ct1.get_sub_group(), tmp, mask);
-    }
+    tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
 
     if (item_ct1.get_local_id(2) == 0) {
         dst[idst] = tmp;
@@ -1496,11 +1492,7 @@ static void mul_mat_vec_nc_f16_f32( // nc == non-contiguous
     }
 
     // sum up partial sums and write back result
-#pragma unroll
-    for (int mask = WARP_SIZE / 2; mask > 0; mask >>= 1) {
-        tmp +=
-            dpct::permute_sub_group_by_xor(item_ct1.get_sub_group(), tmp, mask);
-    }
+    tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
 
     if (item_ct1.get_local_id(2) == 0) {
         dst[idst] = tmp;
@@ -1517,7 +1509,7 @@ static void k_sum_rows_f32(const float * x, float * dst, const int ncols,
         sum += x[row * ncols + i];
     }
 
-    sum = warp_reduce_sum(sum, item_ct1);
+    sum = reduce_over_group(item_ct1.get_sub_group(), sum, sycl::plus<>());
 
     if (col == 0) {
         dst[row] = sum;

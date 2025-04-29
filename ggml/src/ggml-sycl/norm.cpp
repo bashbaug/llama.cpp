@@ -17,7 +17,7 @@ static void norm_f32(const float* x, float* dst, const int ncols, const float ep
     }
 
     // sum up partial sums
-    mean_var = warp_reduce_sum(mean_var, item_ct1);
+    mean_var = reduce_over_group(item_ct1.get_sub_group(), mean_var, sycl::plus<>());
     if (block_size > WARP_SIZE) {
 
         int warp_id = item_ct1.get_local_id(2) / WARP_SIZE;
@@ -36,7 +36,7 @@ static void norm_f32(const float* x, float* dst, const int ncols, const float ep
         {
             mean_var += s_sum[lane_id + i * WARP_SIZE];
         }
-        mean_var = warp_reduce_sum(mean_var, item_ct1);
+        mean_var = reduce_over_group(item_ct1.get_sub_group(), mean_var, sycl::plus<>());
     }
 
     const float mean = mean_var.x() / ncols;
@@ -67,7 +67,7 @@ static void group_norm_f32(const float* x, float* dst, const int group_size, con
         tmp += x[j];
     }
 
-    tmp = warp_reduce_sum(tmp, item_ct1);
+    tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
     if (block_size > WARP_SIZE) {
 
         int warp_id = item_ct1.get_local_id(2) / WARP_SIZE;
@@ -90,7 +90,7 @@ static void group_norm_f32(const float* x, float* dst, const int group_size, con
         {
             tmp += s_sum[lane_id + i * WARP_SIZE];
         }
-        tmp = warp_reduce_sum(tmp, item_ct1);
+        tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
     }
 
     float mean = tmp / group_size;
@@ -102,7 +102,7 @@ static void group_norm_f32(const float* x, float* dst, const int group_size, con
         tmp += xi * xi;
     }
 
-    tmp = warp_reduce_sum(tmp, item_ct1);
+    tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
     if (block_size > WARP_SIZE) {
 
         int warp_id = item_ct1.get_local_id(2) / WARP_SIZE;
@@ -125,7 +125,7 @@ static void group_norm_f32(const float* x, float* dst, const int group_size, con
         {
             tmp += s_sum[lane_id + i * WARP_SIZE];
         }
-        tmp = warp_reduce_sum(tmp, item_ct1);
+        tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
     }
 
     float variance = tmp / group_size;
@@ -150,7 +150,7 @@ static void rms_norm_f32(const float* x, float* dst, const int ncols, const floa
     }
 
     // sum up partial sums
-    tmp = warp_reduce_sum(tmp, item_ct1);
+    tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
     if (block_size > WARP_SIZE) {
 
         int warp_id = item_ct1.get_local_id(2) / WARP_SIZE;
@@ -169,7 +169,7 @@ static void rms_norm_f32(const float* x, float* dst, const int ncols, const floa
         {
             tmp += s_sum[lane_id + i * WARP_SIZE];
         }
-        tmp = warp_reduce_sum(tmp, item_ct1);
+        tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
     }
 
     const float mean = tmp / ncols;
@@ -195,7 +195,7 @@ static void l2_norm_f32(const float* x, float* dst, const int ncols, const float
     }
 
     // sum up partial sums
-    tmp = warp_reduce_sum(tmp, item_ct1);
+    tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
     if (block_size > WARP_SIZE) {
 
         int warp_id = item_ct1.get_local_id(2) / WARP_SIZE;
@@ -214,7 +214,7 @@ static void l2_norm_f32(const float* x, float* dst, const int ncols, const float
         {
             tmp += s_sum[lane_id + i * WARP_SIZE];
         }
-        tmp = warp_reduce_sum(tmp, item_ct1);
+        tmp = reduce_over_group(item_ct1.get_sub_group(), tmp, sycl::plus<>());
     }
 
     const float scale = sycl::rsqrt(sycl::max(tmp, eps * eps));
