@@ -36,15 +36,15 @@ if (WIN32)
     endif()
 endif()
 
-find_package(IntelSYCL)
-if (IntelSYCL_FOUND)
-    # Use oneAPI CMake when possible
-    target_link_libraries(ggml-sycl PRIVATE IntelSYCL::SYCL_CXX)
-else()
+# find_package(IntelSYCL)
+# if (IntelSYCL_FOUND)
+#     # Use oneAPI CMake when possible
+#     target_link_libraries(ggml-sycl PRIVATE IntelSYCL::SYCL_CXX)
+# else()
     # Fallback to the simplest way of enabling SYCL when using intel/llvm nightly for instance
     target_compile_options(ggml-sycl PRIVATE "-fsycl")
     target_link_options(ggml-sycl PRIVATE "-fsycl")
-endif()
+# endif()
 
 target_compile_options(ggml-sycl PRIVATE "-Wno-narrowing")
 
